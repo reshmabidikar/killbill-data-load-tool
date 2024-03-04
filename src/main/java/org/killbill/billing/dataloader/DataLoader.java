@@ -38,13 +38,8 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
+
 
 public class DataLoader {
 
@@ -198,8 +193,7 @@ public class DataLoader {
     private String uploadTenantCatalog(final String catalog, final boolean fetch) throws IOException, URISyntaxException, KillBillClientException {
 
         catalogApi.deleteCatalog(requestOptions);// delete existing catalog if any
-        final Path path = Paths.get(Resources.getResource(catalog).toURI());
-        catalogApi.uploadCatalogXml(Files.readString(path), requestOptions);
+        catalogApi.uploadCatalogXml(toString(catalog), requestOptions);
         return fetch ? catalogApi.getCatalogXml(null, null, requestOptions) : null;
     }
 
