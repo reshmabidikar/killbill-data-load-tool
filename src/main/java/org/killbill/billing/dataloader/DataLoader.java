@@ -57,6 +57,8 @@ public class DataLoader {
     private int nbAccountsPerDay;
     private int nbSubscriptionsPerAccount;
 
+    private int nbDays;
+
     private LocalDate today;
     private RequestOptions requestOptions;
     private KillBillHttpClient killBillHttpClient;
@@ -95,6 +97,7 @@ public class DataLoader {
         this.tenantApiKey = isPresent(properties,"org.killbill.dataloader.tenant.apiKey") ? properties.getProperty("org.killbill.dataloader.tenant.apiKey") : UUID.randomUUID().toString();
         this.tenantApiSecret = isPresent(properties,"org.killbill.dataloader.tenant.apiSecret")  ? properties.getProperty("org.killbill.dataloader.tenant.apiSecret") : UUID.randomUUID().toString();
         this.nbAccountsPerDay = isPresent(properties, "org.killbill.dataloader.nbAccountsPerDay") ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.nbAccountsPerDay")) : 3;
+        this.nbDays = isPresent(properties, "org.killbill.dataloader.nbDays") ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.nbDays")) : 30;
         this.nbSubscriptionsPerAccount = isPresent(properties, "org.killbill.dataloader.nbSubscriptionsPerAccount") ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.nbSubscriptionsPerAccount")) : 2;
         this.today = isPresent(properties,"org.killbill.dataloader.startDate")  ? new LocalDate(properties.getProperty("org.killbill.dataloader.startDate")) : new LocalDate("2024-01-01");
 
@@ -115,15 +118,16 @@ public class DataLoader {
     }
 
     public void createAccountsAndSubscriptions() throws KillBillClientException {
-        for (int i = 1; i <= nbAccountsPerDay; i++) {
-            logger.info("Creating account {}", i);
-            Account account = createAccount();
-            for (int j = 1; j <= nbSubscriptionsPerAccount; j++) {
-                logger.info("Creating subscription {}", j);
-                Subscription subscription = createSubscription(account.getAccountId(), "pistol-monthly-notrial");
+        for (int i = 0; i < nbDays; i++) {
+            logger.info("[{}]:Creating {} accounts and {} subscriptions",today,nbAccountsPerDay, nbSubscriptionsPerAccount);
+            for (int j = 1; j <= nbAccountsPerDay; j++) {
+                Account account = createAccount();
+                for (int k = 1; k <= nbSubscriptionsPerAccount; k++) {
+                    Subscription subscription = createSubscription(account.getAccountId(), "pistol-monthly-notrial");
+                }
             }
-
-
+            today = today.plusDays(1);
+            setDate(today.toString());
         }
     }
 
