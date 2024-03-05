@@ -42,14 +42,13 @@ public class DataLoader {
 
     public static final Logger logger = LoggerFactory.getLogger(DataLoader.class);
     private static final Map<String, String> NULL_PLUGIN_PROPERTIES = null;
+    private final DataLoaderProperties properties;
     private RequestOptions requestOptions;
     private KillBillHttpClient killBillHttpClient;
     private AccountApi accountApi;
     private CatalogApi catalogApi;
     private SubscriptionApi subscriptionApi;
     private TenantApi tenantApi;
-
-    private final DataLoaderProperties properties;
 
 
     public DataLoader() throws Exception {
@@ -68,6 +67,7 @@ public class DataLoader {
         setDate(properties.getToday().toString());
 
     }
+
     public static void main(String[] args) {
         logger.info("Loading Data....");
         try {
