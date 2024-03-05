@@ -28,38 +28,20 @@ import org.killbill.billing.client.api.gen.TenantApi;
 import org.killbill.billing.client.model.gen.Account;
 import org.killbill.billing.client.model.gen.Subscription;
 import org.killbill.billing.client.model.gen.Tenant;
-import org.killbill.commons.utils.io.ByteStreams;
-import org.killbill.commons.utils.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 
 
 public class DataLoader {
 
     public static final Logger logger = LoggerFactory.getLogger(DataLoader.class);
     private static final Map<String, String> NULL_PLUGIN_PROPERTIES = null;
-    private String serverHost;
-    private int serverPort;
-    private int serverConnectionTimeout;
-    private int serverReadTimeout;
-    private String adminUserName;
-    private String adminPassword;
-    private String tenantApiKey;
-    private String tenantApiSecret;
-
-    private int nbAccountsPerDay;
-    private int nbSubscriptionsPerAccount;
-
-    private int nbDays;
-
-    private LocalDate today;
     private RequestOptions requestOptions;
     private KillBillHttpClient killBillHttpClient;
     private AccountApi accountApi;
@@ -67,9 +49,11 @@ public class DataLoader {
     private SubscriptionApi subscriptionApi;
     private TenantApi tenantApi;
 
+    private final DataLoaderProperties properties;
+
 
     public DataLoader() throws Exception {
-        initializeProperties();
+        this.properties = new DataLoaderProperties();
 
         requestOptions = RequestOptions.builder()
                 .withCreatedBy("Integration test")
@@ -78,35 +62,12 @@ public class DataLoader {
                 .build();
 
 
-        setupClient(adminUserName, adminPassword, tenantApiKey, tenantApiSecret);
-        createTenant(tenantApiKey, tenantApiSecret, true);
+        setupClient(properties.getAdminUserName(), properties.getAdminPassword(), properties.getTenantApiKey(), properties.getTenantApiSecret());
+        createTenant(properties.getTenantApiKey(), properties.getTenantApiSecret(), true);
         uploadTenantCatalog("Catalog.xml", true);
-        setDate(today.toString());
+        setDate(properties.getToday().toString());
 
     }
-
-    private void initializeProperties() throws Exception {
-        Properties properties = loadProperties();
-
-        this.serverHost = isPresent(properties,"org.killbill.dataloader.server.host")  ? properties.getProperty("org.killbill.dataloader.server.host") : "1277.0.0.1";
-        this.serverPort = isPresent(properties,"org.killbill.dataloader.server.port")  ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.server.port")) : 8080;
-        this.serverConnectionTimeout = isPresent(properties,"org.killbill.dataloader.server.connection.timeout")  ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.server.connection.timeout")) : 10;
-        this.serverReadTimeout = isPresent(properties,"org.killbill.dataloader.server.read.timeout")  ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.server.read.timeout")) : 60;
-        this.adminUserName = isPresent(properties,"org.killbill.dataloader.admin.username") ? properties.getProperty("org.killbill.dataloader.admin.username") : "admin";
-        this.adminPassword = isPresent(properties,"org.killbill.dataloader.admin.password") ? properties.getProperty("org.killbill.dataloader.admin.password") : "password";
-        this.tenantApiKey = isPresent(properties,"org.killbill.dataloader.tenant.apiKey") ? properties.getProperty("org.killbill.dataloader.tenant.apiKey") : UUID.randomUUID().toString();
-        this.tenantApiSecret = isPresent(properties,"org.killbill.dataloader.tenant.apiSecret")  ? properties.getProperty("org.killbill.dataloader.tenant.apiSecret") : UUID.randomUUID().toString();
-        this.nbAccountsPerDay = isPresent(properties, "org.killbill.dataloader.nbAccountsPerDay") ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.nbAccountsPerDay")) : 3;
-        this.nbDays = isPresent(properties, "org.killbill.dataloader.nbDays") ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.nbDays")) : 30;
-        this.nbSubscriptionsPerAccount = isPresent(properties, "org.killbill.dataloader.nbSubscriptionsPerAccount") ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.nbSubscriptionsPerAccount")) : 2;
-        this.today = isPresent(properties,"org.killbill.dataloader.startDate")  ? new LocalDate(properties.getProperty("org.killbill.dataloader.startDate")) : new LocalDate("2024-01-01");
-
-    }
-
-    private boolean isPresent(final Properties properties, final String propertyName) {
-        return properties.getProperty(propertyName) != null && !properties.getProperty(propertyName).isEmpty();
-    }
-
     public static void main(String[] args) {
         logger.info("Loading Data....");
         try {
@@ -118,11 +79,12 @@ public class DataLoader {
     }
 
     public void createAccountsAndSubscriptions() throws KillBillClientException {
-        for (int i = 0; i < nbDays; i++) {
-            logger.info("[{}]:Creating {} accounts and {} subscriptions",today,nbAccountsPerDay, nbSubscriptionsPerAccount);
-            for (int j = 1; j <= nbAccountsPerDay; j++) {
+        LocalDate today = properties.getToday();
+        for (int i = 0; i < properties.getNbDays(); i++) {
+            logger.info("[{}]:Creating {} accounts and {} subscriptions", today, properties.getNbAccountsPerDay(), properties.getNbSubscriptionsPerAccount());
+            for (int j = 1; j <= properties.getNbAccountsPerDay(); j++) {
                 Account account = createAccount();
-                for (int k = 1; k <= nbSubscriptionsPerAccount; k++) {
+                for (int k = 1; k <= properties.getNbSubscriptionsPerAccount(); k++) {
                     Subscription subscription = createSubscription(account.getAccountId(), "pistol-monthly-notrial");
                 }
             }
@@ -179,14 +141,14 @@ public class DataLoader {
                 .withTenantApiSecret(apiSecret)
                 .build();
 
-        killBillHttpClient = new KillBillHttpClient(String.format("http://%s:%d", serverHost, serverPort),
+        killBillHttpClient = new KillBillHttpClient(String.format("http://%s:%d", properties.getServerHost(), properties.getServerPort()),
                 username,
                 password,
                 apiKey,
                 apiSecret,
                 null,
-                null, serverConnectionTimeout * 1000,
-                serverReadTimeout * 1000);
+                null, properties.getServerConnectionTimeout() * 1000,
+                properties.getServerReadTimeout() * 1000);
 
         accountApi = new AccountApi(killBillHttpClient);
         catalogApi = new CatalogApi(killBillHttpClient);
@@ -197,7 +159,7 @@ public class DataLoader {
     private String uploadTenantCatalog(final String catalog, final boolean fetch) throws IOException, URISyntaxException, KillBillClientException {
 
         catalogApi.deleteCatalog(requestOptions);// delete existing catalog if any
-        catalogApi.uploadCatalogXml(toString(catalog), requestOptions);
+        catalogApi.uploadCatalogXml(FileUtil.toString(catalog), requestOptions);
         return fetch ? catalogApi.getCatalogXml(null, null, requestOptions) : null;
     }
 
@@ -205,20 +167,4 @@ public class DataLoader {
         killBillHttpClient.doPost("/1.0/kb/test/clock?requestedDate=" + dateTime, null, requestOptions);
     }
 
-    private Properties loadProperties() throws Exception {
-        final String propertiesAsString = toString("config.properties");
-        final Properties properties = new Properties();
-        properties.load(new StringReader(propertiesAsString));
-        return properties;
-
-    }
-
-    public static String toString(final String resourceName) throws IOException {
-        final InputStream inputStream = Resources.getResource(resourceName).openStream();
-        try {
-            return new String(ByteStreams.toByteArray(inputStream), StandardCharsets.UTF_8);
-        } finally {
-            inputStream.close();
-        }
-    }
 }
