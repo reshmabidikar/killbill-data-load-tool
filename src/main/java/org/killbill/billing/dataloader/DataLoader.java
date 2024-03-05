@@ -31,6 +31,7 @@ import org.killbill.billing.client.model.gen.Tenant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -51,8 +52,8 @@ public class DataLoader {
     private TenantApi tenantApi;
 
 
-    public DataLoader() throws Exception {
-        this.properties = new DataLoaderProperties();
+    public DataLoader(final String configPath) throws Exception {
+        this.properties = new DataLoaderProperties(configPath);
 
         requestOptions = RequestOptions.builder()
                 .withCreatedBy("Integration test")
@@ -69,9 +70,18 @@ public class DataLoader {
     }
 
     public static void main(String[] args) {
-        logger.info("Loading Data....");
+        logger.info("Usage: java -jar killbill-data-load-tool.jar <config file path>");
+        final String configPath;
+
+        if (args.length == 0 || !new File(args[0]).exists()) {
+            logger.info("Config file not specified or file does not exist at the specified location, using default using default src/main/resources/config.properties");
+            configPath = null;
+        } else {
+            configPath = args[0];
+            logger.info("Using user specified config file:{}", configPath);
+        }
         try {
-            DataLoader dataLoader = new DataLoader();
+            DataLoader dataLoader = new DataLoader(configPath);
             dataLoader.createAccountsAndSubscriptions();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -159,7 +169,7 @@ public class DataLoader {
     private String uploadTenantCatalog(final String catalog, final boolean fetch) throws IOException, URISyntaxException, KillBillClientException {
 
         catalogApi.deleteCatalog(requestOptions);// delete existing catalog if any
-        catalogApi.uploadCatalogXml(FileUtil.toString(catalog), requestOptions);
+        catalogApi.uploadCatalogXml(FileUtil.toString(catalog, true), requestOptions);
         return fetch ? catalogApi.getCatalogXml(null, null, requestOptions) : null;
     }
 

@@ -9,8 +9,10 @@ import java.util.UUID;
 public class DataLoaderProperties {
     private final Properties properties;
 
-    public DataLoaderProperties() throws Exception {
-        this.properties = loadProperties();
+    private final static String DEFAULT_CONFIG_FILE = "config.properties";
+
+    public DataLoaderProperties(final String configPath) throws Exception {
+        this.properties = loadProperties(configPath);
     }
 
     public String getServerHost() {
@@ -61,8 +63,13 @@ public class DataLoaderProperties {
         return isPresent("org.killbill.dataloader.startDate") ? new LocalDate(properties.getProperty("org.killbill.dataloader.startDate")) : new LocalDate("2024-01-01");
     }
 
-    private Properties loadProperties() throws Exception {
-        final String propertiesAsString = FileUtil.toString("config.properties");
+    private Properties loadProperties(final String configPath) throws Exception {
+        final String propertiesAsString;
+        if (configPath != null) {
+            propertiesAsString = FileUtil.toString(configPath, false);
+        } else {
+            propertiesAsString = FileUtil.toString(DEFAULT_CONFIG_FILE, true);
+        }
         final Properties properties = new Properties();
         properties.load(new StringReader(propertiesAsString));
         return properties;
