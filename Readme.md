@@ -18,11 +18,12 @@ mvn clean package
 ## Run
 
 ````
-java -jar .\killbill-data-load-tool-1.0.1-SNAPSHOT-shaded.jar
+java -jar .\killbill-data-load-tool-1.0.1-SNAPSHOT-shaded.jar <config-file-path>
 ````
+
+Note that `<config-file-path>` is optional and if not specified, the default [config.properties]((https://github.com/reshmabidikar/killbill-data-load-tool/blob/main/src/main/resources/config.properties)) will be used
 
 ## Configuration
 
-The tool can be configured by setting appropriate values for the properties in the [config](https://github.com/reshmabidikar/killbill-data-load-tool/blob/main/src/main/resources/config.properties) file. Note that if the tool is being run as a jar file, you will need to build the jar again after setting the appropriate properties.
-
+The tool can be configured by setting appropriate properties in a config file. The path of the config file can be specified as a command line argument. If not, the default [config.properties]((https://github.com/reshmabidikar/killbill-data-load-tool/blob/main/src/main/resources/config.properties)) will be used.
 

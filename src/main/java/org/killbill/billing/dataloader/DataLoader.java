@@ -90,16 +90,27 @@ public class DataLoader {
 
     public void createAccountsAndSubscriptions() throws KillBillClientException {
         LocalDate today = properties.getToday();
-        for (int i = 0; i < properties.getNbDays(); i++) {
-            logger.info("[{}]:Creating {} accounts and {} subscriptions", today, properties.getNbAccountsPerDay(), properties.getNbSubscriptionsPerAccount());
-            for (int j = 1; j <= properties.getNbAccountsPerDay(); j++) {
-                Account account = createAccount();
-                for (int k = 1; k <= properties.getNbSubscriptionsPerAccount(); k++) {
-                    Subscription subscription = createSubscription(account.getAccountId(), "pistol-monthly-notrial");
-                }
-            }
+        int nbDays = properties.getNbDays();
+        if (nbDays == -1) {
+            logger.info("nbdays=-1, Running forever...");
+        } else {
+            logger.info("Creating accounts and subscriptions for {} days", nbDays);
+        }
+        do {
+            createAccountsAndSubscriptionsOnDate(today);
             today = today.plusDays(1);
             setDate(today.toString());
+            nbDays--;
+        } while (nbDays != 0);
+    }
+
+    private void createAccountsAndSubscriptionsOnDate(LocalDate today) throws KillBillClientException {
+        logger.info("[{}]:Creating {} accounts and {} subscriptions", today, properties.getNbAccountsPerDay(), properties.getNbSubscriptionsPerAccount());
+        for (int j = 1; j <= properties.getNbAccountsPerDay(); j++) {
+            Account account = createAccount();
+            for (int k = 1; k <= properties.getNbSubscriptionsPerAccount(); k++) {
+                Subscription subscription = createSubscription(account.getAccountId(), "pistol-monthly-notrial");
+            }
         }
     }
 
