@@ -15,6 +15,8 @@ package org.killbill.billing.dataloader;
  * under the License.
  */
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.joda.time.LocalDate;
 import org.killbill.billing.catalog.api.Currency;
@@ -54,6 +56,10 @@ public class DataLoader {
 
     public DataLoader(final String configPath) throws Exception {
         this.properties = new DataLoaderProperties(configPath);
+
+        if (properties.getLogbackXMLPath() != null && !properties.getLogbackXMLPath().isEmpty() && new File(properties.getLogbackXMLPath()).exists()) {
+            configureLogback(properties.getLogbackXMLPath());
+        }
 
         requestOptions = RequestOptions.builder()
                 .withCreatedBy("Integration test")
@@ -186,6 +192,22 @@ public class DataLoader {
 
     private void setDate(String dateTime) throws KillBillClientException {
         killBillHttpClient.doPost("/1.0/kb/test/clock?requestedDate=" + dateTime, null, requestOptions);
+    }
+
+    private static void configureLogback(String customConfigFilePath) {
+        if (customConfigFilePath != null && !customConfigFilePath.isEmpty()) {
+            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+            context.reset();
+
+            try {
+                JoranConfigurator configurator = new JoranConfigurator();
+                configurator.setContext(context);
+                configurator.doConfigure(customConfigFilePath);
+            } catch (Exception e) {
+                // Configuration error, fallback to default configuration
+                logger.error("Error configuring Logback with custom file: {}", e.getMessage());
+            }
+        }
     }
 
 }

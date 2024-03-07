@@ -63,6 +63,10 @@ public class DataLoaderProperties {
         return isPresent("org.killbill.dataloader.startDate") ? new LocalDate(properties.getProperty("org.killbill.dataloader.startDate")) : new LocalDate("2024-01-01");
     }
 
+    public String getLogbackXMLPath() {
+        return properties.getProperty("logback.configurationFile"); //We do not return a default here
+    }
+
     private Properties loadProperties(final String configPath) throws Exception {
         final String propertiesAsString;
         if (configPath != null) {
