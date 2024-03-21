@@ -74,6 +74,14 @@ public class DataLoaderProperties {
         return isPresent("org.killbill.dataloader.nbDays") ? Integer.parseInt(properties.getProperty("org.killbill.dataloader.nbDays")) : 30;
     }
 
+    public Boolean isJitterEnabled() {
+        return isPresent("org.killbill.dataloader.jitter.enable") ? Boolean.valueOf(properties.getProperty("org.killbill.dataloader.jitter.enable")) : false;
+    }
+
+    public Integer getJitterUpperBound() {
+        return isPresent("org.killbill.dataloader.jitter.upperbound") ? Integer.valueOf(properties.getProperty("org.killbill.dataloader.jitter.upperbound")) : 10;
+    }
+
     public LocalDate getToday() {
         return isPresent("org.killbill.dataloader.startDate") ? new LocalDate(properties.getProperty("org.killbill.dataloader.startDate")) : new LocalDate("2024-01-01");
     }

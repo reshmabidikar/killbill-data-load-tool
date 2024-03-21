@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
 
@@ -111,13 +112,14 @@ public class DataLoader {
     }
 
     private void createAccountsAndSubscriptionsOnDate(LocalDate today) throws KillBillClientException, InterruptedException {
-        logger.info("[{}]:Creating {} accounts and {} subscriptions", today, properties.getNbAccountsPerDay(), properties.getNbSubscriptionsPerAccount());
-        for (int j = 1; j <= properties.getNbAccountsPerDay(); j++) {
+        final long nbAccountsPerDay = properties.isJitterEnabled() ? new Random().nextInt(properties.getJitterUpperBound()) + 1 : properties.getNbAccountsPerDay();
+        logger.info("[{}]:Creating {} accounts", today, nbAccountsPerDay);
+        for (int j = 1; j <= nbAccountsPerDay; j++) {
             Account account = createAccount();
-            logger.debug("Sleeping for {} secs between account and subscription creation", properties.getSleepTime());
-            Thread.sleep(properties.getSleepTime()*1000);
-            logger.debug("Waking up and resuming subscription creation");
-            for (int k = 1; k <= properties.getNbSubscriptionsPerAccount(); k++) {
+            Thread.sleep(properties.getSleepTime() * 1000);
+            final long nbSubscriptionsPerAccount = properties.isJitterEnabled() ? new Random().nextInt(properties.getJitterUpperBound()) + 1 : properties.getNbSubscriptionsPerAccount();
+            logger.info("Account {}, Creating {} subscriptions ", j, nbSubscriptionsPerAccount);
+            for (int k = 1; k <= nbSubscriptionsPerAccount; k++) {
                 Subscription subscription = createSubscription(account.getAccountId(), "pistol-monthly-notrial");
             }
         }
