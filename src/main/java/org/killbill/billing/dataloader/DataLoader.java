@@ -1,4 +1,3 @@
-package org.killbill.billing.dataloader;
 /*
  * Copyright 2014-2024 The Billing Project, LLC
  *
@@ -14,6 +13,7 @@ package org.killbill.billing.dataloader;
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+package org.killbill.billing.dataloader;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
@@ -94,7 +94,7 @@ public class DataLoader {
         }
     }
 
-    public void createAccountsAndSubscriptions() throws KillBillClientException {
+    public void createAccountsAndSubscriptions() throws KillBillClientException, InterruptedException {
         LocalDate today = properties.getToday();
         int nbDays = properties.getNbDays();
         if (nbDays == -1) {
@@ -110,10 +110,13 @@ public class DataLoader {
         } while (nbDays != 0);
     }
 
-    private void createAccountsAndSubscriptionsOnDate(LocalDate today) throws KillBillClientException {
+    private void createAccountsAndSubscriptionsOnDate(LocalDate today) throws KillBillClientException, InterruptedException {
         logger.info("[{}]:Creating {} accounts and {} subscriptions", today, properties.getNbAccountsPerDay(), properties.getNbSubscriptionsPerAccount());
         for (int j = 1; j <= properties.getNbAccountsPerDay(); j++) {
             Account account = createAccount();
+            logger.debug("Sleeping for {} secs between account and subscription creation", properties.getSleepTime());
+            Thread.sleep(properties.getSleepTime()*1000);
+            logger.debug("Waking up and resuming subscription creation");
             for (int k = 1; k <= properties.getNbSubscriptionsPerAccount(); k++) {
                 Subscription subscription = createSubscription(account.getAccountId(), "pistol-monthly-notrial");
             }
